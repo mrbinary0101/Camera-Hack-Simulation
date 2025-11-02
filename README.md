@@ -1,229 +1,186 @@
 # Kamera Tespit ve Simülasyon Sistemi
 
-Bu proje, ağ üzerindeki kameraları tespit etmek ve güvenlik simülasyonu yapmak için geliştirilmiştir.
+Bu depo, ağ üzerindeki IP kameralarını tespit etmek, güvenlik simülasyonları yapmak ve sonuçları JSON raporları şeklinde kaydetmek için hazırlanmış iki ana versiyon içerir: **simülasyon** (eğitim/test) ve **gerçek nmap tabanlı** (üretim/test ortamında dikkatli kullanım).
 
-## 📁 Dosyalar
+> ⚠️ **UYARI:** Bu araç sadece eğitim ve yetkili penetrasyon testleri içindir. Başkasının ağına izinsiz tarama veya saldırı denemesi yasa dışıdır.
 
-### 1. `kamera_simulasyon.py` - Simülasyon Versiyonu
-- **Amaç**: Eğitim ve test amaçlı simülasyon
-- **Özellikler**:
-  - Sahte nmap tarama sonuçları
-  - Kamera tespit simülasyonu
-  - Sahte exploit simülasyonu
-  - Detaylı raporlama
-  - JSON çıktı
+---
 
-### 2. `gercek_nmap_kamera_tespit.py` - Gerçek Nmap Versiyonu
-- **Amaç**: Gerçek ağ tarama ve kamera tespit
-- **Özellikler**:
-  - Gerçek nmap tarama
-  - Sudo yetkisi desteği
-  - SYN scan ve OS detection
-  - XML çıktı parsing
-  - Kamera tespit algoritması
-  - Detaylı raporlama
+## İçerik / Dosya Yapısı
 
-## 🚀 Kullanım
+```
+Kamera-Tespit-Simulasyon/
+├─ README.md
+├─ kamera_simulasyon.py          # Simülasyon versiyonu (sahte nmap + exploit)
+├─ gercek_nmap_kamera_tespit.py  # Gerçek nmap ile tarayan versiyon (XML parsing)
+```
 
-### Simülasyon Versiyonu
+---
+
+## Proje Özeti
+
+* **Simülasyon Versiyonu** (`kamera_simulasyon.py`)
+
+  * Eğitim ve test amaçlıdır.
+  * Sahte nmap sonuçları üretir, açık port/servis/banners simüle eder.
+  * Sahte exploit adımlarıyla zafiyet senaryoları çalıştırır (gerçek saldırı gerçekleştirmez).
+  * JSON formatında detaylı rapor kaydeder.
+
+* **Gerçek Nmap Versiyonu** (`gercek_nmap_kamera_tespit.py`)
+
+  * Gerçek `nmap` çıktısını XML olarak alıp parse eder.
+  * Banner, servis, versiyon ve OS bilgilerine göre kamera tespiti yapar.
+  * `sudo` ile SYN scan (`-sS`) ve OS detection (`-O`) kullanılabilir.
+  * Çıktıyı JSON raporuna dönüştürür.
+
+---
+
+## Desteklenen Marka / Modeller (Örnek)
+
+* Hikvision: `DS-2CD2xxx`, `DS-7604NI`, `DS-7732NI`
+* Dahua: `IPC-HFW4431R`, `NVR4104`
+* Axis: `M3004`, `P1365`
+* Foscam, Vivotek, Sony, Bosch, Panasonic, Canon, Samsung, Pelco, Geovision ...
+
+> Not: Bu liste örnektir — gerçek ortamda banner tabanlı tespitte yanlış pozitif/negatifler olabilir.
+
+---
+
+## Kurulum
+
+### Sistem Gereksinimleri
+
+* Python 3.8+
+* `nmap` (gerçek versiyon için)
+
+### Hızlı Başlangıç (Simülasyon)
+
 ```bash
 python3 kamera_simulasyon.py
+# veya
+python3 kamera_simulasyon.py --target 192.168.1.0/24 --output rapor.json
 ```
 
-### Gerçek Nmap Versiyonu
+### Hızlı Başlangıç (Gerçek Nmap)
+
 ```bash
-# Önce nmap'i yükleyin
-sudo apt install nmap  # Ubuntu/Debian
-sudo yum install nmap  # CentOS/RHEL
-sudo pacman -S nmap    # Arch
+# nmap kurulu değilse (Debian/Ubuntu):
+sudo apt update && sudo apt install -y nmap
 
-# Sonra çalıştırın
-python3 gercek_nmap_kamera_tespit.py
+# root ile daha detaylı tarama:
+sudo python3 gercek_nmap_kamera_tespit.py --target 192.168.1.0/24 --out rapor.json
 
-# Sudo yetkisi ile daha detaylı tarama için:
-sudo python3 gercek_nmap_kamera_tespit.py
+# sudo yoksa TCP connect tarama ile:
+python3 gercek_nmap_kamera_tespit.py --target 192.168.1.0/24 --scan-type connect --out rapor.json
 ```
 
-## 🎯 Desteklenen Kamera Markaları
+---
 
-- **Hikvision** - DS-2CD2xxx, DS-7604NI, DS-7732NI
-- **Hikingson** - HS-IP-2000, HS-IP-3000, HS-IP-4000
-- **Dahua** - IPC-HFW4431R, NVR4104, DHI-NVR2104
-- **Axis** - M3004, P1365, Q1615
-- **Apple** - HomeKit Camera, iSight Pro, FaceTime HD
-- **Samsung** - SNV-6013, SNV-6014, SNV-6015
-- **Sony** - SNC-VB600, SNC-VB630, SNC-VB635
-- **Bosch** - FLEXIDOME, AUTODOME, MIC
-- **Panasonic** - WV-SP102, WV-SP103, WV-SP104
-- **Canon** - VB-C50i, VB-C60i, VB-C70i
-- **Foscam** - FI9821P, FI8910W, FI9900P
-- **Vivotek** - FD8161, FD8162, FD8163
-- **Mobotix** - M15, M16, M25
-- **Pelco** - Sarix, Spectra, Endura
-- **Geovision** - GV-ABL130, GV-ABL140, GV-ABL150
+## Kullanım / Örnek Argümanlar
 
-## 🔍 Tespit Yöntemleri
+* `--target`    : Hedef IP ağı veya IP (örn: `192.168.1.0/24` veya `192.168.1.10`)
+* `--out`       : JSON çıktı dosyası
+* `--sudo`      : Sudo kullanılarak SYN scan ve OS detection aktifleştirme (gerçek nmap)
+* `--scan-type` : `syn` | `connect` (varsayılan: `connect`)
+* `--verbose`   : Konsola ayrıntılı çıktı yazma
 
-### Banner Analizi
-- HTTP başlıkları
-- Servis versiyonları
-- Ürün bilgileri
-- OS tespiti
+---
 
-### Port Tarama
-- 80 (HTTP)
-- 8080 (HTTP Alternatif)
-- 8000-8001 (Kamera Portları)
-- 8008 (Kamera Portları)
-- 8081 (Kamera Portları)
-- 8888 (Kamera Portları)
-- 9000 (Kamera Portları)
+## Tespit Yöntemleri
 
-## 📊 Çıktı Formatları
+1. **Banner Analizi**: HTTP başlıkları, servis ürün/versiyon bilgileri.
+2. **Port Tarama**: 80, 8080, 8000-8001, 8008, 8081, 8888, 9000 gibi tipik kamera portları.
+3. **OS ve Servis Versiyonları**: `nmap -O -sV` çıktıları.
+4. **Regex/Mappings**: Banner ve servis isimleri ile marka/model eşleştirmeleri.
 
-### Konsol Çıktısı
-- Detaylı kamera bilgileri
-- Exploit simülasyon sonuçları
-- İstatistikler
+---
 
-### JSON Raporu
-- Tüm tespit edilen kameralar
-- Detaylı teknik bilgiler
-- Tarih ve saat bilgileri
-- Güvenlik seviyeleri
+## Örnek JSON Çıktı (Kısmi)
 
-## ⚠️ Güvenlik Uyarıları
-
-1. **Sadece kendi ağınızda kullanın**
-2. **İzinsiz tarama yapmayın**
-3. **Bu araçlar eğitim amaçlıdır**
-4. **Gerçek sistemlere zarar vermez**
-
-## 🔐 Sudo Yetkisi
-
-### Neden Sudo Gerekli?
-- **SYN Scan (-sS)**: Root yetkisi gerektirir
-- **OS Detection (-O)**: Root yetkisi gerektirir
-- **Daha hızlı tarama**: SYN scan TCP connect'ten daha hızlıdır
-- **Daha az tespit edilir**: SYN scan daha gizli çalışır
-
-### Sudo Olmadan Çalışma
-- **TCP Connect Scan (-sT)**: Normal kullanıcı yetkisi yeterli
-- **Servis Detection (-sV)**: Normal kullanıcı yetkisi yeterli
-- **HTTP Scripts**: Normal kullanıcı yetkisi yeterli
-
-### Sudo ile Çalışma
-```bash
-# Sudo yetkisi ile çalıştırma
-sudo python3 gercek_nmap_kamera_tespit.py
-
-# Veya sudo yetkisi olmadan çalıştırma
-python3 gercek_nmap_kamera_tespit.py
+```json
+{
+  "report_time": "2025-10-24T22:10:21",
+  "target": "192.168.1.0/24",
+  "cameras": [
+    {
+      "ip": "192.168.1.10",
+      "port": 80,
+      "brand": "Hikvision",
+      "model": "DS-7732NI",
+      "os": "Linux",
+      "banner": "Hikvision Web Server",
+      "security_level": "medium",
+      "detected_at": "2025-10-24T22:09:44"
+    }
+  ],
+  "statistics": {
+    "total_targets": 254,
+    "found_cameras": 10
+  }
+}
 ```
 
-## 🛠️ Gereksinimler
+---
 
-### Simülasyon Versiyonu
-- Python 3.6+
-- Standart kütüphaneler
+## Güvenlik Uyarıları ve Etik Kurallar
 
-### Gerçek Nmap Versiyonu
-- Python 3.6+
-- Nmap (yüklü olmalı)
-- xml.etree.ElementTree
-- subprocess
+* **Sadece** sahip olduğunuz veya izin verilen ağları tarayın.
+* İzinsiz tarama, saldırı veya sömürü girişimleri yasa dışıdır.
+* Bu proje eğitim amaçlıdır; gerçek penetrasyon testleri için yetkili uzmanlar ve sözleşmeler gereklidir.
 
-## 📈 Özellikler
+---
 
-### Simülasyon Versiyonu
-- ✅ Sahte ağ tarama
-- ✅ Kamera tespit simülasyonu
-- ✅ Sahte exploit simülasyonu
-- ✅ Detaylı raporlama
-- ✅ JSON çıktı
-- ✅ Güvenlik seviyesi analizi
+## Geliştirme ve Katkı
 
-### Gerçek Nmap Versiyonu
-- ✅ Gerçek nmap tarama
-- ✅ XML çıktı parsing
-- ✅ Kamera tespit algoritması
-- ✅ Detaylı raporlama
-- ✅ JSON çıktı
-- ✅ OS tespiti
+1. Fork yapın
+2. Yeni bir branch açın (`feature/yenilik`)
+3. Değişiklik yapın
+4. Pull request gönderin
 
-## 🎬 Simülasyon Senaryosu
+**İyileştirilebilir özellikler**:
 
-1. **Ağ Tarama**: Hedef ağ aralığı taranır
-2. **Port Tespit**: Açık portlar bulunur
-3. **Servis Analizi**: HTTP servisleri analiz edilir
-4. **Kamera Tespit**: Banner ve OS bilgilerinden kamera tespiti
-5. **Exploit Simülasyonu**: Sahte exploit denemeleri
-6. **Raporlama**: Detaylı rapor oluşturma
+* Daha geniş model veri tabanı
+* Banner fingerprinting için ML tabanlı sınıflandırıcı
+* CVE/Exploit veritabanına bağlanma (sadece simülasyon dışındaysa dikkatli olun)
 
-## 📝 Örnek Çıktı
+---
+
+## İletişim
+
+Projede değişiklik isterseniz veya yardıma ihtiyaç duyarsanız issue açın veya PR gönderin.
+
+---
+
+> Hazır şablonu GitHub deposuna eklemek isterseniz, README.md dosyasını repo köküne koyup `git init && git add . && git commit -m "Initial commit"` adımlarıyla başlayabilirsiniz.
+
+---
+
+## LICENSE
+
+Aşağıda depoya ekleyebileceğiniz bir **MIT License** örneği bulunmaktadır. Eğer farklı bir lisans isterseniz (Apache-2.0, GPLv3, BSD vb.) söyleyin, değiştireyim.
 
 ```
-🎬 Kamera Tespit ve Exploit Simülasyonu
-==================================================
-⚠️  Bu bir simülasyondur! Gerçek sistemlere zarar vermez.
-==================================================
+MIT License
 
-🔍 Ağ Tarama Başlatılıyor: 192.168.1.0/24
-==================================================
-📡 Tarama sonuçları:
-   192.168.1.10:80 - http - Linux - Hikvision Web Server
-   192.168.1.15:80 - http - Linux - Hikingson Camera System
-   ...
+Copyright (c) 2025 Your Name or Organization
 
-🎥 Kamera Tespit Analizi Başlatılıyor...
-==================================================
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-📹 Tespit Edilen Kameralar (10 adet):
-============================================================
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-🎯 Kamera #1
-   IP Adresi: 192.168.1.10
-   Port: 80
-   Marka: HIKVISION
-   Model: DS-7732NI
-   İşletim Sistemi: Linux
-   Banner: Hikvision Web Server
-   Güvenlik Seviyesi: Orta
-   Açık Portlar: 80, 8535
-   Tespit Tarihi: 2025-10-24 22:09:44
-
-💥 Exploit Simülasyonu Başlatılıyor...
-==================================================
-
-🎯 Hedef: 192.168.1.10 (HIKVISION DS-7732NI)
-   ⚡ Port tarama yapılıyor...
-   ⚡ Servis versiyonu tespit ediliyor...
-   ⚡ Zafiyet analizi yapılıyor...
-   ⚡ Exploit payload hazırlanıyor...
-   ⚡ Bağlantı kuruluyor...
-   ⚡ Komut çalıştırılıyor...
-   ⚡ Shell erişimi sağlanıyor...
-   ✅ BAŞARILI - Shell erişimi: root
-
-📊 Exploit Sonuçları:
-==================================================
-✅ Başarılı: 7
-❌ Başarısız: 3
-📈 Başarı Oranı: 70.0%
-
-📋 Simülasyon Raporu
-==================================================
-📄 Rapor kaydedildi: kamera_simulasyon_raporu_20251024_221021.json
-🎯 Toplam Kamera: 10
-💥 Başarılı Exploit: 7
-
-🎉 Simülasyon tamamlandı!
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
-## 🔧 Geliştirme
-
-Bu proje eğitim amaçlı geliştirilmiştir. Gerçek güvenlik testleri için profesyonel araçlar kullanın.
-
-## 📄 Lisans
-
-Bu proje eğitim amaçlıdır. Ticari kullanım için izin alın.
+---
